@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Github Actions Data</title>
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+  <style>
+    .grid-container {
+      display: inline-grid;
+      grid-template-columns: 25% 25% 25% 25%;
+      grid-auto-flow: row dense;
+      padding: 1px;
+      width: 100%;
+    }
+
+    .grid-item {
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .wide {
+      grid-column: auto / span 2 ;
+      grid-row: auto / span  ;
+    }
+  </style>
+</head>
+
+<body>
+  <h1> Github Actions Stats </h1>
+  <p> Graph the monthly data from redhat-actions users. </p>
+
+  <p> 
+    <h4> Select Column to Graph </h4> <div id="selector"></div> 
+  </p>
+
+  <div class="grid-container">
+    <div class="grid-item  wide" id='action_by_date_total_a'></div> 
+    <div class="grid-item wide  " id='action_by_actions_total_a'></div> 
+    <div class="grid-item  wide" id='action_by_date_total'></div>  
+    <div class="grid-item  wide " id='action_by_actions_total'></div>
+  </div>
+
+
+  <h4>Raw Data</h4>
+  <div id="json" style="height:300;width:800px;border:2px solid #ccc;"></div>
+  <h4>JSON Processed</h4>
+  <div id="text" style="height:300;width:800px;border:2px solid #ccc;"></div>
+
+  <script>
+    function getTextAndUpdate(url, success, error) {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4) {
+          if (this.status == 200) {
+            success(this.responseText);
+          } else {
+            error();
+          }
+        }
+      };
+      xhttp.open("GET", url, true);
+      xhttp.setRequestHeader('Content-type', 'application/json');
+      xhttp.setRequestHeader('Accept', 'text/plain');
+      xhttp.send();
+
+    }
+    function setInnerHtml(id, html) {
+      document.getElementById(id).innerHTML = html;
+    }
+    function error() {
+      alert("error happend fetching data")
+    }
+
+    function convertKnownField(fieldname, value) {
+      if (fieldname == 'Date') {
+        var no_quotes = value.replace(/^"(.*)"$/, '$1')
+        var simple = no_quotes.split("T")[0] + "T12:00:00+00:00";
+        return new Date(simple).toLocaleDateString('en-us');
+      }
+      if (fieldname == 'Name') {
+        var no_quotes = value.replace(/^"(.*)"$/, '$1')
+        var trim_end_slash = no_quotes.replace(/^(.*)\/$/, '$1')
+        var simple_name = trim_end_slash.split("/")[1] ;  // rm redhat-actions prefix   
+        return simple_name;
+      }
+      return parseInt(value);
+    }
+
+    function actionAlias(name) {
+      if (name == "redhat-developer/openshift-actions")
+        return "redhat-actions/oc-login";
+      if (name == "openshift-actions")
+        return "oc-login";      
+      if (name == "redhat-developer/buildah-action")
+        return "redhat-actions/buildah-build";
+      if (name == "buildah-action")
+        return "buildah-build";
+      return name;
+    } 
+    function noAlias(name) { 
+      return name;
+    } 
+
+
+    var global_labels;
+    var global_selected;
+
+    function parse_csv(text) {
+      // split into lines, trim blank lines
+      var lines = text.split(/\r\n|\n/);
+      lines = lines.filter(function (x) { return x.trim().length > 0 });
+      var result = [];
+      var labels = lines[0].split(',');
+      global_labels = labels.filter( function(e) { return e!= 'Name' && e!='Date'})
+      global_selected = global_labels[0]
+      for (var i = 1; i < lines.length; i++) {
+        var data = lines[i].split(',');
+        var r = new Object();
+        for (var j = 0; j < labels.length; j++) {
+          r[labels[j]] = convertKnownField(labels[j], data[j])
+        }
+        result.push(r)
+      }
+      return result;
+    }
+
+    function changeSelect() {  
+        global_selected = (document.getElementById("stat").value) ; 
+        show_graphs(global_jsondata, false);
+        show_graphs(global_jsondata, true);
+    } 
+
+    var global_jsondata;
+    function update_graph(text) {
+        setInnerHtml("json", '<pre>' + text + '</pre>');
+        var jsondata = parse_csv(text);
+        global_jsondata = jsondata; 
+        setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
+        var select = '<select onchange="changeSelect()" name="stat" id="stat">';
+        global_labels.forEach(function (l) {
+          select += ' <option value="' + l + '">' + l + '</option>'
+        })
+        select += " </select>"
+        setInnerHtml("selector", select); 
+        show_graphs(jsondata, false);
+        show_graphs(jsondata, true);
+      }
+
+    function show_graphs(json, alias) {
+        var nameAlias = alias ? actionAlias : noAlias;
+
+        var actionNames = new Set(json.map(function (e) { return nameAlias(e.Name) }));
+        var action_names = [...actionNames];
+        var action_dates = json.map(function (e) { return e.Date });
+        var map = new Object();
+        action_names.forEach(function (name) {
+          map[name] = new Object();
+          action_dates.forEach(function (date) {
+            map[name][date] = 0;
+          })
+        }) 
+        json.forEach(function (element) {
+          map[nameAlias(element.Name)][element.Date] += element[global_selected]
+        })
+        var data = []
+        action_names.forEach(function (name) { 
+          data.push({
+            x: Object.keys(map[name]),
+            y: Object.values(map[name]),
+            name: name,
+            type: 'bar'
+          })
+        })
+        var suffix = '';
+        var tsuffix = '(unmerged action names)';
+        if (alias) {
+          suffix = '_a'; 
+          tsuffix = ''
+        } 
+        Plotly.newPlot('action_by_actions_total'+suffix, data, {
+          barmode: 'stack',
+          title: 'Combined Actions Totals: ' + global_selected + tsuffix
+        });
+        Plotly.newPlot('action_by_date_total'+suffix, data, {
+          barmode: 'group',
+          title: 'Indivdual Actions Totals: ' + global_selected  + tsuffix
+        });
+      }
+
+      // doit 
+      getTextAndUpdate('data.csv', update_graph, error);
+  </script>
+</body>
+
+</html>
