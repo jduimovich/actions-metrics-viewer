@@ -189,11 +189,7 @@
           title: 'Indivdual Actions Totals: ' + global_selected  + tsuffix
         });
       }
- 
-      var fetch = window.location.href.replace("index.html", "");
-      var url=fetch+'data.csv';
-      alert (url)
-      getTextAndUpdate(url, update_graph, error);
+      getTextAndUpdate('data.csv', update_graph, error);
   </script>
 </body>
 
