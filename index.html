@@ -172,9 +172,11 @@
         var colour = colours[colourIndex++ % colours.length]
         data.push({
           x: Object.keys(map[name]),
-          y: Object.values(map[name]), marker: {
-            color: opacity(colour, 0.6) 
-          },
+          y: Object.values(map[name]), 
+          marker: {
+            color: colour,
+            opacity: 0.6 
+          }, 
           name: name,
           type: 'bar'
         })
@@ -183,13 +185,13 @@
       if (noMerge) {
         tsuffix = '(unmerged action names)'
       }
-      Plotly.newPlot('action_by_actions_' + columnToShow, data, {
-        barmode: 'stack',
-        title: 'Combined Actions Totals: ' + columnToShow + tsuffix
-      });
       Plotly.newPlot('action_by_date_' + columnToShow, data, {
         barmode: 'group',
         title: 'Indivdual Actions Totals: ' + columnToShow + tsuffix
+      });
+      Plotly.newPlot('action_by_actions_' + columnToShow, data, {
+        barmode: 'stack',
+        title: 'Combined Actions Totals: ' + columnToShow + tsuffix
       });
     }
     getTextAndUpdate('data.csv', update_graph, error);
