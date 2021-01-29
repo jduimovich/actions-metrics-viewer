@@ -16,3 +16,7 @@ open http://localhost:8888
 ```
 
 To stop the local server use `docker stop nginx`
+
+Experimental. Click on the header to switch between two chart packages. Stil undecided which one is nicer. 
+
+

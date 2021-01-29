@@ -3,9 +3,15 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Github Actions Data</title>
-  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+  <title>Github Actions Data</title> 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
   <style>
+    canvas {
+      -moz-user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+    }
+
     .grid-container {
       display: inline-grid;
       grid-template-columns: 25% 25% 25% 25%;
@@ -29,8 +35,8 @@
 </head>
 
 <body>
-  <div id="title_with_date">
-    <a href="indexnew.html"> <h1> Github Actions Stats </h1></a>  
+  <div id="title_with_date"> 
+    <a href="index.html"> <h1> Github Actions Stats </h1></a>  
   </div>
 
   <div id='outer_grid_holder' class="grid-container">
@@ -80,7 +86,8 @@
         return simple_name;
       }
       return parseInt(value);
-    } 
+    }
+
     function actionAlias(name) {
       if (name == "redhat-developer/openshift-actions")
         return "redhat-actions/oc-installer";
@@ -116,31 +123,82 @@
     }
 
     var global_jsondata;
+
+    function createCanvasFor(data, tag, stacked) {
+      var id = (stacked ? 'canvas_stack_' : 'canvas_') + tag;
+
+      var ctx = document.getElementById(id).getContext('2d');
+      var bar = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+          scales: {
+            xAxes: [{
+              stacked: stacked
+            }],
+            yAxes: [{
+              stacked: stacked
+            }]
+          },
+          responsive: true,
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Summary for:' + tag
+          }
+        }
+      });
+      return bar
+    }
+
+    var globalBarChartData = new Object();
     function update_graph(text) {
       setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
       global_jsondata = jsondata;
       setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
-      var innergrid = '';
+
+      var canvas_grid = ''
       global_labels.forEach(function (label) {
-        innergrid += '<div class="grid-item  wide" id="action_by_date_' + label + '"></div>';
-        innergrid += '<div class="grid-item  wide" id="action_by_actions_' + label + '"></div>';
+        canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_' + label + '" ></canvas></div>';
+        canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_stack_' + label + '" ></canvas></div>';
       })
-      setInnerHtml("outer_grid_holder", innergrid);
+      setInnerHtml("outer_grid_holder", canvas_grid);
+      globalBarChartData.bars = [];
+      global_labels.forEach(function (label) {
+        globalBarChartData[label] = { labels: [label], datasets: [] };
+        globalBarChartData.bars.push(createCanvasFor(globalBarChartData[label], label, false))
+        globalBarChartData.bars.push(createCanvasFor(globalBarChartData[label], label, true))
+      })
 
       var title_with_date = document.getElementById("title_with_date").innerHTML 
         + "<h4> " + (jsondata[0].Date) + " - " + (jsondata[jsondata.length - 1].Date) + "</h4>";
-      setInnerHtml("title_with_date", title_with_date); 
+      setInnerHtml("title_with_date", title_with_date);
 
       global_labels.forEach(function (label) {
-        show_graphs(jsondata, label);
+        show_new_graphs(jsondata, label);
       })
+      window.myBar
     }
+
+
+    var graph_colours = [
+      'rgb(255, 99, 132)',
+      'rgb(255, 159, 64)',
+      'rgb(255, 205, 86)',
+      'rgb(75, 192, 192)',
+      'rgb(54, 162, 235)',
+      'rgb(153, 102, 255)',
+      'rgb(201, 203, 207)'
+    ];
 
     // if nomerge is passed anywhere in url, show the full actions without combining the renamed, or deprecated actions
     const noMerge = window.location.href.includes("nomerge");
     const nameAlias = noMerge ? noAlias : actionAlias;
-    function show_graphs(json, columnToShow) {
+    function show_new_graphs(json, columnToShow) {
+      var barChartData = globalBarChartData[columnToShow];
       var actionNames = new Set(json.map(function (e) { return nameAlias(e.Name) }));
       var action_names = [...actionNames];
       var action_dates = json.map(function (e) { return e.Date });
@@ -153,49 +211,29 @@
         map[nameAlias(element.Name)][element.Date] += element[columnToShow]
       })
 
-      function opacity(c, o) { 
-        var op = ',' + o + ')';
-        var rgba= c.replace ('rgb', 'rgba')
-        return rgba.replace (')', op) 
-      }
-      var colours = [
-        'rgb(255, 99, 132)',
-        'rgb(255, 150, 64)',
-        'rgb(255, 205, 86)',
-        'rgb(75, 192, 192)',
-        'rgb(54, 162, 235)',
-        'rgb(153, 102, 255)',
-        'rgb(201, 203, 207)'
-      ];
-      var colourIndex = 0;
-      var data = []
+      var action_dates = json.map(function (e) { return e.Date });
+      barChartData.labels = [...new Set(action_dates)];
+      var cindex = 0;
       action_names.forEach(function (name) {
-        var colour = colours[colourIndex++ % colours.length]
-        data.push({
-          x: Object.keys(map[name]),
-          y: Object.values(map[name]), 
-          marker: {
-            color: colour,
-            opacity: 0.6 
-          }, 
-          name: name,
-          type: 'bar'
+        var colour = graph_colours[cindex++ % graph_colours.length]
+        barChartData.datasets.push({
+          label: name,
+          backgroundColor: Chart.helpers.color(colour).alpha(0.7).rgbString(),
+          borderColor: colour,
+          borderWidth: 1,
+          data: Object.values(map[name])
         })
       })
-      var tsuffix = '';
-      if (noMerge) {
-        tsuffix = '(unmerged action names)'
-      }
-      Plotly.newPlot('action_by_date_' + columnToShow, data, {
-        barmode: 'group',
-        title: 'Individual Actions Totals: ' + columnToShow + tsuffix
-      });
-      Plotly.newPlot('action_by_actions_' + columnToShow, data, {
-        barmode: 'stack',
-        title: 'Combined Actions Totals: ' + columnToShow + tsuffix
-      });
+      globalBarChartData.bars.forEach(function (bar) {
+        bar.update();
+      })
     }
-    getTextAndUpdate('data.csv', update_graph, error);
+
+    window.onload = function () {
+      getTextAndUpdate('data.csv', update_graph, error);
+    };
+
+
   </script>
 </body>
 
