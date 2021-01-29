@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html> 
+<html>
+
 <head>
   <meta charset="utf-8">
   <title>Github Actions Data</title>
@@ -11,13 +12,15 @@
       grid-auto-flow: row dense;
       padding: 1px;
       width: 100%;
-    } 
+    }
+
     .grid-item {
       background-color: rgba(255, 255, 255, 0.8);
       border: 1px solid rgba(0, 0, 0, 0.8);
       padding: 10px;
       text-align: center;
-    } 
+    }
+
     .wide {
       grid-column: auto / span 2;
       grid-row: auto / span;
@@ -61,17 +64,17 @@
     }
     function error() {
       alert("error happened fetching data")
-    } 
-    function trimQuotes(value) { 
+    }
+    function trimQuotes(value) {
       return value.replace(/^"(.*)"$/, '$1')
     }
     // csv files have a date and name and a bunch of stats which are numbers 
     function convertKnownField(fieldname, value) {
-      if (fieldname == 'Date') { 
+      if (fieldname == 'Date') {
         const simple = trimQuotes(value).split("T")[0] + "T12:00:00+00:00";
         return new Date(simple).toLocaleDateString('en-us');
       }
-      if (fieldname == 'Name') { 
+      if (fieldname == 'Name') {
         const trim_end_slash = trimQuotes(value).replace(/^(.*)\/$/, '$1')
         const simple_name = trim_end_slash.split("/")[1];  // rm redhat-actions prefix   
         return simple_name;
@@ -94,14 +97,14 @@
       return name;
     }
 
-    var global_labels; 
+    var global_labels;
     function parse_csv(text) {
       // split into lines, trim blank lines
       var lines = text.split(/\r\n|\n/);
       lines = lines.filter(function (x) { return x.trim().length > 0 });
       var result = [];
       var labels = lines[0].split(',');
-      global_labels = labels.filter(function (e) { return e != 'Name' && e != 'Date' }) 
+      global_labels = labels.filter(function (e) { return e != 'Name' && e != 'Date' })
       for (var i = 1; i < lines.length; i++) {
         var data = lines[i].split(',');
         var r = new Object();
@@ -119,16 +122,16 @@
       var jsondata = parse_csv(text);
       global_jsondata = jsondata;
       setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
-      var innergrid = ''; 
-      global_labels.forEach(function (label) { 
+      var innergrid = '';
+      global_labels.forEach(function (label) {
         innergrid += '<div class="grid-item  wide" id="action_by_date_' + label + '"></div>';
         innergrid += '<div class="grid-item  wide" id="action_by_actions_' + label + '"></div>';
       })
-      setInnerHtml("outer_grid_holder", innergrid); 
+      setInnerHtml("outer_grid_holder", innergrid);
       var title_with_date = " <h1> Github Actions Stats</h1><h4> " + (jsondata[0].Date) + " - " + (jsondata[jsondata.length - 1].Date) + "</h4>";
       setInnerHtml("title_with_date", title_with_date);
 
-      global_labels.forEach(function (label) { 
+      global_labels.forEach(function (label) {
         show_graphs(jsondata, label);
       })
     }
@@ -148,11 +151,30 @@
       json.forEach(function (element) {
         map[nameAlias(element.Name)][element.Date] += element[columnToShow]
       })
+
+      function opacity(c, o) { 
+        var op = ',' + o + ')';
+        var rgba= c.replace ('rgb', 'rgba')
+        return rgba.replace (')', op) 
+      }
+      var colours = [
+        'rgb(255, 99, 132)',
+        'rgb(255, 150, 64)',
+        'rgb(255, 205, 86)',
+        'rgb(75, 192, 192)',
+        'rgb(54, 162, 235)',
+        'rgb(153, 102, 255)',
+        'rgb(201, 203, 207)'
+      ];
+      var colourIndex = 0;
       var data = []
       action_names.forEach(function (name) {
+        var colour = colours[colourIndex++ % colours.length]
         data.push({
           x: Object.keys(map[name]),
-          y: Object.values(map[name]),
+          y: Object.values(map[name]), marker: {
+            color: opacity(colour, 0.6) 
+          },
           name: name,
           type: 'bar'
         })
