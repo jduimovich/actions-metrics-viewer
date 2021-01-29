@@ -152,12 +152,7 @@
       json.forEach(function (element) {
         map[nameAlias(element.Name)][element.Date] += element[columnToShow]
       })
-
-      function opacity(c, o) { 
-        var op = ',' + o + ')';
-        var rgba= c.replace ('rgb', 'rgba')
-        return rgba.replace (')', op) 
-      }
+      
       var colours = [
         'rgb(255, 99, 132)',
         'rgb(255, 150, 64)',
