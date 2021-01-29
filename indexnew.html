@@ -126,7 +126,7 @@
 
     function createCanvasFor(data, tag, stacked) {
       var id = (stacked ? 'canvas_stack_' : 'canvas_') + tag;
-
+      var title = (stacked ? 'Combined Actions Totals: ' : 'Individual Actions Totals: ')+ tag;
       var ctx = document.getElementById(id).getContext('2d');
       var bar = new Chart(ctx, {
         type: 'bar',
@@ -146,7 +146,7 @@
           },
           title: {
             display: true,
-            text: 'Summary for:' + tag
+            text: title
           }
         }
       });
