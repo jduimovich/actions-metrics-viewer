@@ -115,10 +115,20 @@
       return result;
     }
 
+    function compute_derived_stats(jsondata) {  
+      jsondata.forEach(function (d) {
+        d['UniqueRepos/UniqueOwners'] = d['UniqueRepos'] / d['UniqueOwners']
+        d['WorkflowRuns/UniqueRepos'] = d['WorkflowRuns'] / d['UniqueRepos']
+      })
+      global_labels.push('UniqueRepos/UniqueOwners')
+      global_labels.push('WorkflowRuns/UniqueRepos')
+    }  
+
     var global_jsondata;
     function update_graph(text) {
       setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
+      compute_derived_stats(jsondata)
       global_jsondata = jsondata;
       setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
       var innergrid = '';
