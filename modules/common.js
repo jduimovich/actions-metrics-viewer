@@ -81,7 +81,7 @@ function parse_csv(text) {
   actionData.labels = labels.filter(function (e) { return e != 'Name' && e != 'Date' })
   for (var i = 1; i < lines.length; i++) {
     var data = lines[i].split(',');
-    var r = new Object();
+    var r = {};
     for (var j = 0; j < labels.length; j++) {
       r[labels[j]] = convertKnownField(labels[j], data[j])
     }
