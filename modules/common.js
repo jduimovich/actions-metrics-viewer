@@ -10,7 +10,7 @@ function getTextAndUpdate(url, success, error) {
     }
   };
   xhttp.open("GET", url, true);
-  xhttp.setRequestHeader('Content-type', 'application/json');
+  xhttp.setRequestHeader('Content-type', 'application/json; charset=utf-8'); 
   xhttp.setRequestHeader('Accept', 'text/plain');
   xhttp.send();
 }
