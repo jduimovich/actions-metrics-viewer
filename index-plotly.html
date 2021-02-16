@@ -29,13 +29,13 @@
   </style>
 </head>
 
-<body> 
+<body>
   <div id="title">
     <a href="index.html">
       <h1> Github Actions Stats </h1>
     </a>
   </div>
-  <div id="date_range"> 
+  <div id="date_range">
   </div>
   <div id='outer_grid_holder' class="grid-container">
   </div>
@@ -44,19 +44,19 @@
   <h4>JSON Processed</h4>
   <div id="text" style="height:300;width:800px;border:2px solid #ccc;"></div>
 
-  <script type="module"> 
+  <script type="module">
     import {
-  getTextAndUpdate, setInnerHtml,  parse_csv, compute_derived_stats , nameAlias } from './modules/common.js'; 
+      getTextAndUpdate, setInnerHtml, parse_csv
+    } from './modules/common.js';
 
 
     function update_graph(text) {
       setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
-      compute_derived_stats(jsondata) 
-      setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>'); 
-      var date_range =  "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
-      setInnerHtml("date_range", date_range); 
- 
+      setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
+      var date_range = "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
+      setInnerHtml("date_range", date_range);
+
       var innergrid = '';
       jsondata.labels.forEach(function (label) {
         innergrid += '<div class="grid-item  wide" id="action_by_date_' + label + '"></div>';
@@ -69,43 +69,29 @@
     }
 
     function show_graphs(json, columnToShow) {
-      var actionNames = new Set(json.data.map(function (e) { return  nameAlias(e.Name) }));
-      var action_names = [...actionNames];
-      var action_dates = json.data.map(function (e) { return e.Date });
-      var map = new Object();
-      action_names.forEach(function (name) {
-        map[name] = new Object();
-        action_dates.forEach(function (date) { map[name][date] = 0; })
+      var map = {};
+      json.action_names.forEach(function (name) {
+        map[name] = {};
       })
       json.data.forEach(function (element) {
-        map[ nameAlias(element.Name)][element.Date] += element[columnToShow]
+        map[element.Name][element.Date] = element[columnToShow]
       })
-      if (columnToShow == 'UniqueRepos/UniqueOwners') { 
-        json.data.forEach(function (element) { 
-          map[nameAlias(element.Name)][element.Date] = (element['UniqueRepos'] / element['UniqueOwners']).toFixed(2) 
-        })
-      }
-      if (columnToShow == 'WorkflowRuns/UniqueRepos') { 
-        json.data.forEach(function (element) { 
-          map[nameAlias(element.Name)][element.Date] = (element['WorkflowRuns'] / element['UniqueRepos']).toFixed(2)
-        })
-      }   
 
       var colourIndex = 0;
       var data = []
-      action_names.forEach(function (name) {
+      json.action_names.forEach(function (name) {
         var colour = json.graph_colours[colourIndex++ % json.graph_colours.length]
         data.push({
           x: Object.keys(map[name]),
-          y: Object.values(map[name]), 
+          y: Object.values(map[name]),
           marker: {
             color: colour,
-            opacity: 0.6 
-          }, 
+            opacity: 0.6
+          },
           name: name,
           type: 'bar'
         })
-      }) 
+      })
       Plotly.newPlot('action_by_date_' + columnToShow, data, {
         barmode: 'group',
         title: 'Individual Actions: ' + columnToShow + json.tsuffix
@@ -115,11 +101,11 @@
         title: 'Combined Actions: ' + columnToShow + json.tsuffix
       });
     }
-    
-     
-    getTextAndUpdate('data.csv', update_graph, function  () {
+
+
+    getTextAndUpdate('data.csv', update_graph, function () {
       alert("error happened fetching data")
-    } );
+    });
   </script>
 </body>
 

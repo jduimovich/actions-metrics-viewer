@@ -10,7 +10,7 @@ function getTextAndUpdate(url, success, error) {
     }
   };
   xhttp.open("GET", url, true);
-  xhttp.setRequestHeader('Content-type', 'application/json; charset=utf-8'); 
+  xhttp.setRequestHeader('Content-type', 'application/json; charset=utf-8');
   xhttp.setRequestHeader('Accept', 'text/plain');
   xhttp.send();
 }
@@ -37,7 +37,7 @@ function convertKnownField(fieldname, value) {
 
 
 const noMerge = window.location.href.includes("nomerge");
-function nameAlias (name) {
+function nameAlias(name) {
   if (noMerge) return name;
   if (name == "redhat-developer/openshift-actions")
     return "redhat-actions/oc-installer";
@@ -48,18 +48,18 @@ function nameAlias (name) {
   if (name == "buildah-action")
     return "buildah-build";
   return name;
-} ;
+};
 
-function ActionsData() { 
+function ActionsData() {
   this.labels = [];
   this.data = [];
-  this.graph_colours =  [
+  this.graph_colours = [
     'rgb(255, 99, 132)',
     'rgb(255, 150, 64)',
     'rgb(255, 205, 86)',
     'rgb(75, 192, 192)',
     'rgb(54, 162, 235)',
-    'rgb(153, 102, 255)', 
+    'rgb(153, 102, 255)',
     'rgb(201, 203, 207)',
     'rgb(201, 203, 0)',
     'rgb(255, 0, 132)',
@@ -67,16 +67,47 @@ function ActionsData() {
     'rgb(255, 0, 86)',
     'rgb(0, 192, 192)',
     'rgb(0, 162, 235)'
-  ];  
-  this.tsuffix = noMerge? '(unmerged action names)' : "" ; 
+  ];
+  this.tsuffix = noMerge ? '(unmerged action names)' : "";
 }
 
+function mergeStats(json, keep, tomerge) {
+  json.labels.forEach(function (label) {
+    keep[label] += tomerge[label]
+  })
+  tomerge.discard = true;
+  keep.discard = false;
+  keep.merged = tomerge;
+}
+
+function merge_aliased_stats(json) {
+  if (noMerge) return;
+  json.data.forEach(function (e) {
+    e.originalName = e.Name;
+    e.mergedName = nameAlias(e.Name);
+    e.Name = e.mergedName;
+  })
+  var name_date_map = {}
+  json.data.forEach(function (e) {
+    if (name_date_map[e.mergedName]) {
+      if (name_date_map[e.mergedName][e.Date])
+        mergeStats(json, name_date_map[e.mergedName][e.Date], e);
+      else {
+        name_date_map[e.mergedName][e.Date] = e
+      }
+    } else {
+      name_date_map[e.mergedName] = {};
+      name_date_map[e.mergedName][e.Date] = e
+    }
+  })
+  json.data = json.data.filter(function (e) { return !e.discard })
+}
 
 function parse_csv(text) {
-  var actionData = new ActionsData() 
+  var actionData = new ActionsData()
   // split into lines, trim blank lines
   var lines = text.split(/\r\n|\n/);
-  lines = lines.filter(function (x) { return x.trim().length > 0 }); 
+  lines = lines.filter(function (x) { return x.trim().length > 0 });
   var labels = lines[0].split(',');
   actionData.labels = labels.filter(function (e) { return e != 'Name' && e != 'Date' })
   for (var i = 1; i < lines.length; i++) {
@@ -87,6 +118,23 @@ function parse_csv(text) {
     }
     actionData.data.push(r)
   }
+  merge_aliased_stats(actionData)
+  compute_derived_stats(actionData)
+
+  // unique action names
+  var actionNames = new Set(actionData.data.map(function (e) { return e.Name }));
+  actionData.action_names = [...actionNames];
+  var action_dates = actionData.data.map(function (e) { return e.Date });
+  actionData.action_dates = [...new Set(action_dates)];
+
+  var map = new Object();
+  actionData.action_names.forEach(function (name) {
+    map[name] = new Object();
+  })
+  actionData.data.forEach(function (element) {
+    map[element.Name][element.Date] = element
+  })
+  actionData.map_name_date = map;
   return actionData;
 }
 
@@ -100,5 +148,5 @@ function compute_derived_stats(actionData) {
 }
 
 export {
-  getTextAndUpdate, setInnerHtml,  parse_csv, compute_derived_stats, nameAlias
+  getTextAndUpdate, setInnerHtml, parse_csv
 }

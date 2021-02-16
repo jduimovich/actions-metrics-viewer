@@ -41,7 +41,7 @@
       <h1> Github Actions Stats </h1>
     </a>
   </div>
-  <div id="date_range"> 
+  <div id="date_range">
   </div>
 
   <div id='outer_grid_holder' class="grid-container">
@@ -55,8 +55,8 @@
 
   <script type="module">
     import {
-      getTextAndUpdate, setInnerHtml,  
-       parse_csv, compute_derived_stats, nameAlias
+      getTextAndUpdate, setInnerHtml,
+      parse_csv
     } from './modules/common.js';
 
     function createCanvasFor(data, tag, stacked) {
@@ -92,10 +92,9 @@
     function update_graph(text) {
       setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
-      compute_derived_stats(jsondata) 
-      setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>'); 
-      var date_range =  "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
-      setInnerHtml("date_range", date_range); 
+      setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
+      var date_range = "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
+      setInnerHtml("date_range", date_range);
 
       var canvas_grid = ''
       jsondata.labels.forEach(function (label) {
@@ -115,33 +114,19 @@
     }
 
     function show_graphs(json, columnToShow) {
-      var barChartData = globalBarChartData[columnToShow];
-      var actionNames = new Set(json.data.map(function (e) { return  nameAlias(e.Name) }));
-      var action_names = [...actionNames];
-      var action_dates = json.data.map(function (e) { return e.Date });
-      var map = new Object();
-      action_names.forEach(function (name) {
-        map[name] = new Object();
-        action_dates.forEach(function (date) { map[name][date] = 0; })
+      var map = {};
+      json.action_names.forEach(function (name) {
+        map[name] = {};
+        json.action_dates.forEach(function (date) { map[name][date] = 0; })
       })
-      json.data.forEach(function (element) { 
-        map[nameAlias(element.Name)][element.Date] += element[columnToShow] 
+      json.data.forEach(function (element) {
+        map[element.Name][element.Date] = element[columnToShow]
       })
-      if (columnToShow == 'UniqueRepos/UniqueOwners') { 
-        json.data.forEach(function (element) { 
-          map[nameAlias(element.Name)][element.Date] = (element['UniqueRepos'] / element['UniqueOwners']).toFixed(2) 
-        })
-      }
-      if (columnToShow == 'WorkflowRuns/UniqueRepos') { 
-        json.data.forEach(function (element) { 
-          map[nameAlias(element.Name)][element.Date] = (element['WorkflowRuns'] / element['UniqueRepos']).toFixed(2)
-        })
-      }     
 
-      var action_dates = json.data.map(function (e) { return e.Date });
-      barChartData.labels = [...new Set(action_dates)];
+      var barChartData = globalBarChartData[columnToShow];
+      barChartData.labels = json.action_dates;
       var cindex = 0;
-      action_names.forEach(function (name) {
+      json.action_names.forEach(function (name) {
         var colour = json.graph_colours[cindex++ % json.graph_colours.length]
         barChartData.datasets.push({
           label: name,
