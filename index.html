@@ -41,11 +41,23 @@
       <h1> Github Actions Stats </h1>
     </a>
   </div>
-  <div id="date_range">
-  </div>
+  <div id="date_range"> </div>
+  <a href="#legend">Data Definitions</a>
 
   <div id='outer_grid_holder' class="grid-container">
   </div>
+
+  <h4 id=legend>Data Definitions </h4>
+  For each action:
+  <ul>
+    <li>Name - the owner/repo path to action</li>
+    <li>Total - number of times action was referenced in all workflows</li>
+    <li>UniqueOwners - number of unique Users or Organizations with workflows using action</li>
+    <li>UniqueRepos - number of unique repos with workflows using action</li>
+    <li>WorkflowRuns - number of overall workflow runs using action</li>
+    <li>UniqueJobs - number of unique workflow jobs using action, eg. multiple jobs per workflow or matrix build</li>
+  </ul>
+ 
 
   <h4>Raw Data</h4>
   <div id="json" style="height:300;width:800px;border:2px solid #ccc;"></div>
