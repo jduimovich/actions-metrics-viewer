@@ -35,19 +35,20 @@ function convertKnownField(fieldname, value) {
   return parseInt(value);
 }
 
-
+const action_name_map = {
+  "openshift-actions": "oc-installer",
+  "buildah-action": "buildah-build",
+  "check-self-hosted-runner": "openshift-actions-runner-installer",
+  "self-hosted-runner-installer": "openshift-actions-runner-installer",
+  "openshift-cli-installer": "openshift-tools-installer"
+};
+ 
 const noMerge = window.location.href.includes("nomerge");
 function nameAlias(name) {
   if (noMerge) return name;
-  if (name == "redhat-developer/openshift-actions")
-    return "redhat-actions/oc-installer";
-  if (name == "openshift-actions")
-    return "oc-installer";
-  if (name == "redhat-developer/buildah-action")
-    return "redhat-actions/buildah-build";
-  if (name == "buildah-action")
-    return "buildah-build";
-  return name;
+  var mergedName = action_name_map[name];
+  if (mergedName) return mergedName;
+  return name; 
 };
 
 function ActionsData() {
