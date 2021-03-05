@@ -40,7 +40,8 @@ const action_name_map = {
   "buildah-action": "buildah-build",
   "check-self-hosted-runner": "openshift-actions-runner-installer",
   "self-hosted-runner-installer": "openshift-actions-runner-installer",
-  "openshift-cli-installer": "openshift-tools-installer"
+  "openshift-cli-installer": "openshift-tools-installer",
+  "knative-service-deploy" :  "knative-service manager"
 };
  
 const noMerge = window.location.href.includes("nomerge");
