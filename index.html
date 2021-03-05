@@ -3,10 +3,14 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Github Actions Data</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
   <script type="module" src="./modules/common.js"></script>
   <style>
+    body { 
+      min-width: 1024px
+    }
     canvas {
       -moz-user-select: none;
       -webkit-user-select: none;
@@ -14,8 +18,8 @@
     }
 
     .grid-container {
-      display: inline-grid;
-      grid-template-columns: 25% 25% 25% 25%;
+      display: inline-grid; 
+      grid-template-columns: repeat(auto-fit, minmax(512px, 1fr)); 
       grid-auto-flow: row dense;
       padding: 1px;
       width: 100%;
