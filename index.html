@@ -51,6 +51,8 @@
   <div id='outer_grid_holder' class="grid-container">
   </div>
 
+  <div id="select_actions"> </div>
+
   <h4 id=legend>Data Definitions </h4>
   For each action:
   <ul>
@@ -114,6 +116,27 @@
       setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
       var date_range = "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
       setInnerHtml("date_range", date_range);
+ 
+      
+      jsondata.selectedActions = {}  
+      var selected = ' <fieldset> <legend>Select Actions to Display</legend>'
+      jsondata.action_names.forEach(function (label) {
+        jsondata.selectedActions[label]=true
+        selected +=
+          '<input type="checkbox" name="action" checked="true" id="select_label_' + label + '" value="' + label + '"/><label for="track">' + label + '</label><br />'
+      })
+      selected += '</fieldset>'
+      setInnerHtml("select_actions", selected);
+      jsondata.action_names.forEach(function (label) {
+        var input = document.getElementById('select_label_' + label);
+        input.oninput = function () { 
+          jsondata.selectedActions[label] = !jsondata.selectedActions[label]
+          jsondata.labels.forEach(function (l) {
+            show_graphs(jsondata, l);
+          })
+        }
+      })
+ 
 
       var canvas_grid = ''
       jsondata.labels.forEach(function (label) {
@@ -133,19 +156,27 @@
     }
 
     function show_graphs(json, columnToShow) {
+    
+
       var map = {};
-      json.action_names.forEach(function (name) {
+      var namesToShow = json.action_names.filter(function (name) {
+            return json.selectedActions[name]});
+      var dataToShow = json.data.filter(function (e) {
+            return json.selectedActions[e.Name]});
+
+      namesToShow.forEach(function (name) {
         map[name] = {};
         json.action_dates.forEach(function (date) { map[name][date] = 0; })
       })
-      json.data.forEach(function (element) {
+      dataToShow.forEach(function (element) {
         map[element.Name][element.Date] = element[columnToShow]
       })
 
       var barChartData = globalBarChartData[columnToShow];
       barChartData.labels = json.action_dates;
       var cindex = 0;
-      json.action_names.forEach(function (name) {
+        barChartData.datasets.length=0;
+        namesToShow.forEach(function (name) {
         var colour = json.graph_colours[cindex++ % json.graph_colours.length]
         barChartData.datasets.push({
           label: name,
