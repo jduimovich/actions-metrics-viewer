@@ -43,7 +43,15 @@
   <h1> Github Actions Stats </h1> 
   <div id="date_range"> </div>
   <a href="#legend">Configure</a>
-
+  <div id="trim_text"> Show top actions </div>
+  <input 
+    type="range" 
+    min="1" 
+    max="20" 
+    value="20" 
+    step="1" 
+    class="slider" 
+    id="trimmer">
   <div id='outer_grid_holder' class="grid-container">
   </div>
 
@@ -150,16 +158,38 @@
       jsondata.labels.forEach(function (label) {
         show_graphs(jsondata, label);
       })
+      var trimmer = document.getElementById("trimmer");
+      trimmer.oninput = function () {  
+        showTrimText (jsondata) 
+        jsondata.labels.forEach(function (l) {
+            show_graphs(jsondata, l);
+          }) 
+      }  
+        trimmer.onchange = trimmer.oninput;
     }
+    var trimmer = document.getElementById("trimmer");
 
-    function show_graphs(json, columnToShow) {
-    
+    function showTrimText (json) { 
+      var total = Object.keys(json.selectedActions).length;
+      var set = trimmer.value;
+      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' +  total + ' actions'  );
+    }
+    function show_graphs(json, columnToShow) { 
+      var map = {}; 
+      var elements = Object.keys(json.selectedActions).length;
+      if (trimmer.max != elements) { 
+        trimmer.max= elements; 
+        showTrimText (json) 
+      }
 
-      var map = {};
       var namesToShow = json.action_names.filter(function (name) {
-            return json.selectedActions[name]});
+            return json.selectedActions[name]
+            && json.sortMap[name] < trimmer.value
+      });
       var dataToShow = json.data.filter(function (e) {
-            return json.selectedActions[e.Name]});
+            return json.selectedActions[e.Name]
+            && json.sortMap[e.Name] < trimmer.value
+      });
 
       namesToShow.forEach(function (name) {
         map[name] = {};
