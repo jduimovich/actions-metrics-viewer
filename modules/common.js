@@ -41,21 +41,41 @@ const action_name_map = {
   "check-self-hosted-runner": "openshift-actions-runner-installer",
   "self-hosted-runner-installer": "openshift-actions-runner-installer",
   "openshift-cli-installer": "openshift-tools-installer",
-  "kn-service-deploy" :  "kn-service-manager"
+  "kn-service-deploy": "kn-service-manager"
 };
- 
+
 const noMerge = window.location.href.includes("nomerge");
 function nameAlias(name) {
   if (noMerge) return name;
   var mergedName = action_name_map[name];
   if (mergedName) return mergedName;
-  return name; 
+  return name;
 };
 
+function generateColours() {
+  var c = [];
+  const red = [255, 100];
+  const green = [100, 0, 200];
+  const blue = [132, 255, 200, 0];
+
+  // for (var r = 255; r > 0; r -= 100)
+  // for (var g = 255; g > 0; g -= 100)
+  //   for (var b = 255; b > 0; b -= 100)
+  for (const r of red)
+    for (const b of blue)
+      for (const g of green) {
+        if (r != g && r != b) {
+          var cc = 'rgb(' + r + ',' + g + ',' + b + ')';
+          c.push(cc);
+        }
+      }
+  return c;
+}
 function ActionsData() {
   this.labels = [];
   this.data = [];
-  this.graph_colours = [
+  this.graph_colours = generateColours();
+  this.graph_colours_x = [
     'rgb(255, 99, 132)',
     'rgb(255, 150, 64)',
     'rgb(255, 205, 86)',
@@ -102,7 +122,33 @@ function merge_aliased_stats(json) {
       name_date_map[e.mergedName][e.Date] = e
     }
   })
-  json.data = json.data.filter(function (e) { return !e.discard })
+  json.data = json.data.filter(function (e) { return !e.discard }) 
+  
+}
+
+function computeSortMap(json) { 
+  var findAllMax = {};
+  json.data.forEach(function (e) {
+    var current = findAllMax["Name"];
+    if (current == undefined) findAllMax["Name"]=e.Total; 
+    if (findAllMax["Name"]<e.Total) findAllMax["Name"]=e.Total  
+  }) 
+  var s=[];
+  json.action_names.forEach(function (name) {
+    s.push ({ "Name": name, "Total": findAllMax[name]})
+  })    
+
+  s.sort(function (a, b) { if (a.Total > b.Total) return -1; else return 1; });
+  var idx = 0;
+  var sortMap = {}
+  s.forEach(function (e) {
+    e.sortIndex = idx++;
+    sortMap[e.Name] = e.sortIndex
+  }); 
+  json.data.forEach(function (e) {
+    e.sortIndex = sortMap[e.Name]
+  })
+  json.sortMap = sortMap;
 }
 
 function parse_csv(text) {
@@ -129,6 +175,8 @@ function parse_csv(text) {
   var action_dates = actionData.data.map(function (e) { return e.Date });
   actionData.action_dates = [...new Set(action_dates)];
 
+  computeSortMap(actionData)
+  
   var map = new Object();
   actionData.action_names.forEach(function (name) {
     map[name] = new Object();
