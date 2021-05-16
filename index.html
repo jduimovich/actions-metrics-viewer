@@ -41,8 +41,7 @@
 
 <body> 
   <h1> Github Actions Stats </h1> 
-  <div id="date_range"> </div>
-  <a href="#legend">Configure</a>
+  <div id="date_range"> </div> 
   <div id="trim_text"> Show top actions </div>
   <input 
     type="range" 
@@ -171,16 +170,25 @@
 
     function showTrimText (json) { 
       var total = Object.keys(json.selectedActions).length;
-      var set = trimmer.value;
-      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' +  total + ' actions'  );
+      var totalEnabled = (Object.values(json.selectedActions).filter(function (enabled) { return enabled;})).length;
+       
+      if (trimmer.max != totalEnabled) { 
+        trimmer.max= totalEnabled; 
+      }
+
+      var selectedText;
+      if (totalEnabled == total) { 
+         selectedText = total + ' actions (<a href="#legend">Select Subset</a>)';
+      } else { 
+         selectedText = totalEnabled  + ' (<a href="#legend">subset selected from ' + total + ' actions </a>)';
+      }
+      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' + selectedText );
     }
     function show_graphs(json, columnToShow) { 
       var map = {}; 
-      var elements = Object.keys(json.selectedActions).length;
-      if (trimmer.max != elements) { 
-        trimmer.max= elements; 
-        showTrimText (json) 
-      }
+
+      showTrimText (json) 
+      
 
       var namesToShow = json.action_names.filter(function (name) {
             return json.selectedActions[name]
