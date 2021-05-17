@@ -74,21 +74,27 @@ function generateColours() {
 function ActionsData() {
   this.labels = [];
   this.data = [];
-  this.graph_colours = generateColours();
-  this.graph_colours_x = [
+  this.graph_coloursx = generateColours();
+  this.graph_colours = [
     'rgb(255, 99, 132)',
     'rgb(255, 150, 64)',
     'rgb(255, 205, 86)',
     'rgb(75, 192, 192)',
-    'rgb(54, 162, 235)',
-    'rgb(153, 102, 255)',
+    'rgb(54, 162, 215)',
+    'rgb(153, 80, 255)',
     'rgb(201, 203, 207)',
     'rgb(201, 203, 0)',
     'rgb(255, 0, 132)',
     'rgb(255, 0, 64)',
-    'rgb(255, 0, 86)',
-    'rgb(0, 192, 192)',
-    'rgb(0, 162, 235)'
+    'rgb(255, 0, 86)', 
+    'rgb(0, 192, 255)',
+
+    'rgb(0, 22, 192)',
+    'rgb(0, 99, 255)',
+    'rgb(0, 200, 150)',
+    'rgb(0, 200, 99)',
+    'rgb(0, 200, 0)' 
+
   ];
   this.tsuffix = noMerge ? '(unmerged action names)' : "";
 }
