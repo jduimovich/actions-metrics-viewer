@@ -131,10 +131,12 @@
       })
       selected += '</fieldset>'
       setInnerHtml("select_actions", selected);
+      var trimmer = document.getElementById("trimmer");
       jsondata.action_names.forEach(function (label) {
-        var input = document.getElementById('select_label_' + label);
+        var input = document.getElementById('select_label_' + label); 
         input.oninput = function () { 
           jsondata.selectedActions[label] = !jsondata.selectedActions[label]
+          trimmer.value = trimmer.max  
           jsondata.labels.forEach(function (l) {
             show_graphs(jsondata, l);
           })
@@ -173,7 +175,7 @@
       var totalEnabled = (Object.values(json.selectedActions).filter(function (enabled) { return enabled;})).length;
        
       if (trimmer.max != totalEnabled) { 
-        trimmer.max= totalEnabled; 
+        trimmer.max= trimmer.value = totalEnabled; 
       }
 
       var selectedText;
@@ -189,30 +191,46 @@
 
       showTrimText (json) 
       
+      var count = 0;
+      var sortMapIdx=0;
+      json.action_names.forEach (function (name)  { 
+          if (json.selectedActions[name] && count < trimmer.value) { 
+            count++;
+           // console.log ("selected ", count, " of ", trimmer.value)
+          //console.log ("index of  ", name, " is ", json.sortMap[name])
+            if (sortMapIdx < json.sortMap[name]) { 
+              sortMapIdx =  json.sortMap[name];
+              //console.log ("sortmapindex updated to  ", sortMapIdx)
+            }
+          }
+      });
 
       var namesToShow = json.action_names.filter(function (name) {
             return json.selectedActions[name]
-            && json.sortMap[name] < trimmer.value
+            && json.sortMap[name] <= sortMapIdx
       });
       var dataToShow = json.data.filter(function (e) {
             return json.selectedActions[e.Name]
-            && json.sortMap[e.Name] < trimmer.value
+            && json.sortMap[e.Name] <= sortMapIdx
       });
-
-      namesToShow.forEach(function (name) {
+ 
+      var cindex = 0;
+      json.action_names.forEach(function (name) {
         map[name] = {};
+        map[name].colour = json.graph_colours[cindex++ % json.graph_colours.length]
+      })
+      namesToShow.forEach(function (name) {
         json.action_dates.forEach(function (date) { map[name][date] = 0; })
       })
       dataToShow.forEach(function (element) {
         map[element.Name][element.Date] = element[columnToShow]
       })
-
+ 
       var barChartData = globalBarChartData[columnToShow];
-      barChartData.labels = json.action_dates;
-      var cindex = 0;
-        barChartData.datasets.length=0;
-        namesToShow.forEach(function (name) {
-        var colour = json.graph_colours[cindex++ % json.graph_colours.length]
+      barChartData.labels = json.action_dates; 
+      barChartData.datasets.length=0;
+      namesToShow.forEach(function (name) {
+        var colour = map[name].colour 
         barChartData.datasets.push({
           label: name,
           backgroundColor: Chart.helpers.color(colour).alpha(0.7).rgbString(),
@@ -224,6 +242,7 @@
       globalBarChartData.bars.forEach(function (bar) {
         bar.update();
       })
+       
     }
 
     window.onload = function () {
