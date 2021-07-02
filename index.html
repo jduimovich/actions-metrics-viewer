@@ -215,11 +215,12 @@
       });
  
       var cindex = 0;
+      var colours={}
       json.action_names.forEach(function (name) {
-        map[name] = {};
-        map[name].colour = json.graph_colours[cindex++ % json.graph_colours.length]
+        colours[name] = json.graph_colours[cindex++ % json.graph_colours.length]
       })
       namesToShow.forEach(function (name) {
+        map[name] = {};
         json.action_dates.forEach(function (date) { map[name][date] = 0; })
       })
       dataToShow.forEach(function (element) {
@@ -230,7 +231,7 @@
       barChartData.labels = json.action_dates; 
       barChartData.datasets.length=0;
       namesToShow.forEach(function (name) {
-        var colour = map[name].colour 
+        var colour = colours[name] 
         barChartData.datasets.push({
           label: name,
           backgroundColor: Chart.helpers.color(colour).alpha(0.7).rgbString(),
