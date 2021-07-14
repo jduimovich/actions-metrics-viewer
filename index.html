@@ -191,20 +191,12 @@
 
       showTrimText (json) 
       
-      var count = 0;
-      var sortMapIdx=0;
+      var sortMapIdx=trimmer.value-1; // show all  
       json.action_names.forEach (function (name)  { 
-          if (json.selectedActions[name] && count < trimmer.value) { 
-            count++;
-           // console.log ("selected ", count, " of ", trimmer.value)
-          //console.log ("index of  ", name, " is ", json.sortMap[name])
-            if (sortMapIdx < json.sortMap[name]) { 
-              sortMapIdx =  json.sortMap[name];
-              //console.log ("sortmapindex updated to  ", sortMapIdx)
-            }
-          }
-      });
-
+        if (!json.selectedActions[name]) {  
+            sortMapIdx++
+        } 
+      })  
       var namesToShow = json.action_names.filter(function (name) {
             return json.selectedActions[name]
             && json.sortMap[name] <= sortMapIdx

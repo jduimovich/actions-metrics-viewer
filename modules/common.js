@@ -135,9 +135,9 @@ function merge_aliased_stats(json) {
 function computeSortMap(json) { 
   var findAllMax = {};
   json.data.forEach(function (e) {
-    var current = findAllMax["Name"];
-    if (current == undefined) findAllMax["Name"]=e.Total; 
-    if (findAllMax["Name"]<e.Total) findAllMax["Name"]=e.Total  
+    var current = findAllMax[e.Name];
+    if (current == undefined) findAllMax[e.Name]=e.Total; 
+    if (findAllMax[e.Name]<e.Total) findAllMax[e.Name]=e.Total  
   }) 
   var s=[];
   json.action_names.forEach(function (name) {
