@@ -51,6 +51,16 @@
     step="1" 
     class="slider" 
     id="trimmer">
+    
+  <div id="choosemonths_text"> Number of months to show </div>
+  <input 
+    type="range" 
+    min="1" 
+    max="20" 
+    value="12" 
+    step="1" 
+    class="slider" 
+    id="choosemonths">
   <div id='outer_grid_holder' class="grid-container">
   </div>
 
@@ -166,9 +176,20 @@
             show_graphs(jsondata, l);
           }) 
       }  
-        trimmer.onchange = trimmer.oninput;
+      trimmer.onchange = trimmer.oninput;
+
+      var choosemonths = document.getElementById("choosemonths");
+      choosemonths.oninput = function () {  
+        showMonthText (jsondata) 
+        jsondata.labels.forEach(function (l) {
+            show_graphs(jsondata, l);
+          }) 
+      }  
+      choosemonths.onchange = choosemonths.oninput;
+
+
     }
-    var trimmer = document.getElementById("trimmer");
+    var trimmer = document.getElementById("trimmer"); 
 
     function showTrimText (json) { 
       var total = Object.keys(json.selectedActions).length;
@@ -186,11 +207,16 @@
       }
       setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' + selectedText );
     }
+    
+    var choosemonths = document.getElementById("choosemonths");
+    function showMonthText (json) { 
+      setInnerHtml("choosemonths_text", "Showing last " + choosemonths.value + ' of ' 
+      + choosemonths.max + ' months of data');
+    }
     function show_graphs(json, columnToShow) { 
-      var map = {}; 
-
-      showTrimText (json) 
-      
+      var map = {};  
+      showTrimText (json)  
+      showMonthText (json)  
       var sortMapIdx=trimmer.value-1; // show all  
       json.action_names.forEach (function (name)  { 
         if (!json.selectedActions[name]) {  
@@ -219,17 +245,29 @@
         map[element.Name][element.Date] = element[columnToShow]
       })
  
+      
+      var choosemonths = document.getElementById("choosemonths");
+      var monthstoshow = choosemonths.value; 
+      if (choosemonths.max > json.action_dates.length) { 
+        choosemonths.max = json.action_dates.length;
+      }
+      var sliceOff = 0;
+      if (monthstoshow < json.action_dates.length) { 
+        sliceOff = json.action_dates.length - monthstoshow
+      }
       var barChartData = globalBarChartData[columnToShow];
-      barChartData.labels = json.action_dates; 
+      barChartData.labels = json.action_dates.slice (sliceOff); 
       barChartData.datasets.length=0;
       namesToShow.forEach(function (name) {
+        var data = Object.values(map[name])
+        var trimmed_data = data.slice (sliceOff)
         var colour = colours[name] 
         barChartData.datasets.push({
           label: name,
           backgroundColor: Chart.helpers.color(colour).alpha(0.7).rgbString(),
           borderColor: colour,
           borderWidth: 1,
-          data: Object.values(map[name])
+          data: trimmed_data
         })
       })
       globalBarChartData.bars.forEach(function (bar) {
