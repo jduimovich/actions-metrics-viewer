@@ -17,6 +17,8 @@ The metrics page will be found at  [http://localhost:8888](http://localhost:8888
 
 To stop the local server use `docker stop nginx`
 
+There are utilities in `hack/run{sh/cmd}` `hack/stop{sh/cmd}` for Windows and Linux which also open the browser window on `http://localhost:8888`
+
 ## Saved Queries
 
 The metrics viewer will create a query URL as the page is configured. You can save this URL to return to the exact same query in future without manually reconfiguring the page every visit.
