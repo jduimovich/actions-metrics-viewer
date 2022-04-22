@@ -23,5 +23,5 @@ There are utilities in `hack/run{sh/cmd}` `hack/stop{sh/cmd}` for Windows and Li
 
 The metrics viewer will create a query URL as the page is configured. You can save this URL to return to the exact same query in future without manually reconfiguring the page every visit.
 
-For example, this link will show the top 6 actions for the past 4 months [ http://localhost:8888/index.html?months=6&top=6](http://localhost:8888/index.html?months=4&top=6) 
+For example, this link will show the top 6 actions for the past 4 months [ http://localhost:8888/index.html?months=4&top=6](http://localhost:8888/index.html?months=4&top=6) 
  
