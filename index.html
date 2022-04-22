@@ -120,7 +120,7 @@
       }
       if (globalAppConfig.default_top_n_actions_to_show != 
           globalAppConfig.top_n_actions_to_show) 
-      { 
+      {  
         query += prefix + "top=" + globalAppConfig.top_n_actions_to_show
         prefix = "&"
       }
@@ -248,7 +248,7 @@
 
       if (trimmer.max != totalEnabled) {
         trimmer.max = totalEnabled;
-        globalAppConfig.default_top_n_actions_to_show = total
+        globalAppConfig.default_top_n_actions_to_show = totalEnabled
       }
 
       var selectedText;
