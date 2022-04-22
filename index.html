@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Github Actions Data</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-  <script type="module" src="./modules/common.js"></script>
   <style>
-    body { 
+    body {
       min-width: 1024px
     }
+
     canvas {
       -moz-user-select: none;
       -webkit-user-select: none;
@@ -18,8 +18,8 @@
     }
 
     .grid-container {
-      display: inline-grid; 
-      grid-template-columns: repeat(auto-fit, minmax(512px, 1fr)); 
+      display: inline-grid;
+      grid-template-columns: repeat(auto-fit, minmax(512px, 1fr));
       grid-auto-flow: row dense;
       padding: 1px;
       width: 100%;
@@ -39,35 +39,19 @@
   </style>
 </head>
 
-<body> 
-  <h1> Github Actions Stats </h1> 
-  <div id="date_range"> </div> 
+<body>
+  <h1> Github Actions Stats </h1>
   <div id="trim_text"> Show top actions </div>
-  <input 
-    type="range" 
-    min="1" 
-    max="20" 
-    value="20" 
-    step="1" 
-    class="slider" 
-    id="trimmer">
-    
+  <input type="range" min="1" max="20" value="20" step="1" class="slider" id="trimmer">
+
   <div id="choosemonths_text"> Number of months to show </div>
-  <input 
-    type="range" 
-    min="1" 
-    max="20" 
-    value="12" 
-    step="1" 
-    class="slider" 
-    id="choosemonths">
-  <div id='outer_grid_holder' class="grid-container">
-  </div>
+  <input type="range" min="1" max="20" value="12" step="1" class="slider" id="choosemonths">
+  <div id='outer_grid_holder' class="grid-container"> </div>
 
   <div id="legend"> </div>
   <div id="select_actions"> </div>
   <a href="#">Goto top</a>
-  <h4 >Data Definitions </h4>
+  <h4>Data Definitions </h4>
   For each action:
   <ul>
     <li>Name - the owner/repo path to action</li>
@@ -77,10 +61,11 @@
     <li>WorkflowRuns - number of overall workflow runs using action</li>
     <li>UniqueJobs - number of unique workflow jobs using action, eg. multiple jobs per workflow or matrix build</li>
 
-    <li><em>UniqueRepos/UniqueOwners</em> - computed metric which represents the average number of repos a single action is used per user.</li>
+    <li><em>UniqueRepos/UniqueOwners</em> - computed metric which represents the average number of repos a single action
+      is used per user.</li>
     <li><em>WorkflowRuns/UniqueRepos</em> - computed metric which represents the average number of runs per repo. </li>
   </ul>
-  
+
 
   <h4>Raw Data</h4>
   <div id="json" style="height:300;width:800px;border:2px solid #ccc;"></div>
@@ -93,6 +78,64 @@
       getTextAndUpdate, setInnerHtml,
       parse_csv
     } from './modules/common.js';
+     
+    var globalAppConfig =  {
+      "default_months_to_show": 12,
+      "months_to_show": 12,
+      "default_top_n_actions_to_show": null, 
+      "top_n_actions_to_show": null,  
+      "default_actions_to_show": null,
+      "actions_to_show": null
+    } 
+    const params = new URLSearchParams(window.location.search)
+     
+    if (params.has("months")) { 
+      var val = params.get ("months")
+      globalAppConfig.months_to_show = val 
+      document.getElementById("choosemonths").value = val;
+    }
+    if (params.has("top")) {  
+      var val = params.get ("top")
+      globalAppConfig.top_n_actions_to_show = val
+      document.getElementById("trimmer").value = val;
+
+    } 
+    if (params.has("show")) { 
+      var val = params.get ("show")
+      globalAppConfig.actions_to_show = val
+      
+      alert ("show " + val)
+    }
+    globalAppConfig.initialUrl = window.location;
+    globalAppConfig.initialQuery = "";
+
+    function updateWindowsLocation () { 
+      var prefix = "?"
+      var query = ""
+      if (globalAppConfig.default_months_to_show != 
+          globalAppConfig.months_to_show) 
+      { 
+        query += prefix + "months=" + globalAppConfig.months_to_show
+        prefix = "&"
+      }
+      if (globalAppConfig.default_top_n_actions_to_show != 
+          globalAppConfig.top_n_actions_to_show) 
+      { 
+        query += prefix + "top=" + globalAppConfig.top_n_actions_to_show
+        prefix = "&"
+      }
+      if (globalAppConfig.actions_to_show) 
+      { 
+        query += prefix + "show=" + globalAppConfig.actions_to_show
+        prefix = "&"
+      } 
+        let stateObj = {
+          foo: "bar",
+        } 
+        history.replaceState(stateObj, "Ignored", "index.html"+ query)
+ 
+    } 
+    updateWindowsLocation ()
 
     function createCanvasFor(data, tag, stacked) {
       var id = (stacked ? 'canvas_stack_' : 'canvas_') + tag;
@@ -123,19 +166,17 @@
       return bar
     }
 
-    var globalBarChartData = new Object();
     function update_graph(text) {
       setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
       setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
-      var date_range = "<h4> " + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date) + "</h4>";
-      setInnerHtml("date_range", date_range);
- 
-      
-      jsondata.selectedActions = {}  
+      document.title = "Metrics "
+        + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date)
+
+      jsondata.selectedActions = {}
       var selected = ' <fieldset> <legend>Select Actions to Display</legend>'
       jsondata.action_names.forEach(function (label) {
-        jsondata.selectedActions[label]=true
+        jsondata.selectedActions[label] = true
         selected +=
           '<input type="checkbox" name="action" checked="true" id="select_label_' + label + '" value="' + label + '"/><label for="track">' + label + '</label><br />'
       })
@@ -143,16 +184,16 @@
       setInnerHtml("select_actions", selected);
       var trimmer = document.getElementById("trimmer");
       jsondata.action_names.forEach(function (label) {
-        var input = document.getElementById('select_label_' + label); 
-        input.oninput = function () { 
+        var input = document.getElementById('select_label_' + label);
+        input.oninput = function () {
           jsondata.selectedActions[label] = !jsondata.selectedActions[label]
-          trimmer.value = trimmer.max  
+         // trimmer.value = trimmer.max
           jsondata.labels.forEach(function (l) {
             show_graphs(jsondata, l);
           })
         }
       })
- 
+
 
       var canvas_grid = ''
       jsondata.labels.forEach(function (label) {
@@ -160,80 +201,85 @@
         canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_stack_' + label + '" ></canvas></div>';
       })
       setInnerHtml("outer_grid_holder", canvas_grid);
-      globalBarChartData.bars = [];
+      globalAppConfig.bars = [];
       jsondata.labels.forEach(function (label) {
-        globalBarChartData[label] = { labels: [label], datasets: [] };
-        globalBarChartData.bars.push(createCanvasFor(globalBarChartData[label], label, false))
-        globalBarChartData.bars.push(createCanvasFor(globalBarChartData[label], label, true))
+        globalAppConfig[label] = { labels: [label], datasets: [] };
+        globalAppConfig.bars.push(createCanvasFor(globalAppConfig[label], label, false))
+        globalAppConfig.bars.push(createCanvasFor(globalAppConfig[label], label, true))
       })
       jsondata.labels.forEach(function (label) {
         show_graphs(jsondata, label);
       })
       var trimmer = document.getElementById("trimmer");
-      trimmer.oninput = function () {  
-        showTrimText (jsondata) 
+      trimmer.oninput = function () {
+        showTrimText(jsondata)
         jsondata.labels.forEach(function (l) {
-            show_graphs(jsondata, l);
-          }) 
-      }  
+          show_graphs(jsondata, l);
+        })
+      }
       trimmer.onchange = trimmer.oninput;
 
       var choosemonths = document.getElementById("choosemonths");
-      choosemonths.oninput = function () {  
-        showMonthText (jsondata) 
+      choosemonths.oninput = function () {
+        showMonthText(jsondata)
         jsondata.labels.forEach(function (l) {
-            show_graphs(jsondata, l);
-          }) 
-      }  
+          show_graphs(jsondata, l);
+        })
+      }
       choosemonths.onchange = choosemonths.oninput;
 
 
     }
-    var trimmer = document.getElementById("trimmer"); 
+    var trimmer = document.getElementById("trimmer");
 
-    function showTrimText (json) { 
+    function showTrimText(json) {
       var total = Object.keys(json.selectedActions).length;
-      var totalEnabled = (Object.values(json.selectedActions).filter(function (enabled) { return enabled;})).length;
-       
-      if (trimmer.max != totalEnabled) { 
-        trimmer.max= trimmer.value = totalEnabled; 
+      var totalEnabled = (Object.values(json.selectedActions).filter(function (enabled) { return enabled; })).length;
+
+      if (trimmer.max != totalEnabled) {
+        trimmer.max = totalEnabled;
+        globalAppConfig.default_top_n_actions_to_show = trimmer.max
       }
 
       var selectedText;
-      if (totalEnabled == total) { 
-         selectedText = total + ' actions (<a href="#legend">Select Subset</a>)';
-      } else { 
-         selectedText = totalEnabled  + ' (<a href="#legend">subset selected from ' + total + ' actions </a>)';
+      if (totalEnabled == total) {
+        selectedText = total + ' actions (<a href="#legend">Select Subset</a>)';
+      } else {
+        selectedText = totalEnabled + ' (<a href="#legend">subset selected from ' + total + ' actions </a>)';
       }
-      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' + selectedText );
+      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' + selectedText);
+      globalAppConfig.top_n_actions_to_show = trimmer.value
+      updateWindowsLocation();
     }
-    
+
     var choosemonths = document.getElementById("choosemonths");
-    function showMonthText (json) { 
-      setInnerHtml("choosemonths_text", "Showing last " + choosemonths.value + ' of ' 
-      + choosemonths.max + ' months of data');
+    function showMonthText(json) {
+      setInnerHtml("choosemonths_text", "Showing last " + choosemonths.value + ' of '
+        + choosemonths.max + ' months of data');
+      globalAppConfig.months_to_show = choosemonths.value
+      updateWindowsLocation();
     }
-    function show_graphs(json, columnToShow) { 
-      var map = {};  
-      showTrimText (json)  
-      showMonthText (json)  
-      var sortMapIdx=trimmer.value-1; // show all  
-      json.action_names.forEach (function (name)  { 
-        if (!json.selectedActions[name]) {  
-            sortMapIdx++
-        } 
-      })  
+    function show_graphs(json, columnToShow) {
+      var map = {};
+      showTrimText(json)
+      showMonthText(json)
+      var sortMapIdx = trimmer.value - 1; // show all  
+      json.action_names.forEach(function (name) {
+        if (!json.selectedActions[name]) {
+          sortMapIdx++
+        }
+      })
       var namesToShow = json.action_names.filter(function (name) {
-            return json.selectedActions[name]
-            && json.sortMap[name] <= sortMapIdx
+        return json.selectedActions[name]
+          && json.sortMap[name] <= sortMapIdx
       });
       var dataToShow = json.data.filter(function (e) {
-            return json.selectedActions[e.Name]
-            && json.sortMap[e.Name] <= sortMapIdx
+        return json.selectedActions[e.Name]
+          && json.sortMap[e.Name] <= sortMapIdx
       });
- 
+
       var cindex = 0;
-      var colours={}
+      var colours = {}
       json.action_names.forEach(function (name) {
         colours[name] = json.graph_colours[cindex++ % json.graph_colours.length]
       })
@@ -244,24 +290,24 @@
       dataToShow.forEach(function (element) {
         map[element.Name][element.Date] = element[columnToShow]
       })
- 
-      
+
+
       var choosemonths = document.getElementById("choosemonths");
-      var monthstoshow = choosemonths.value; 
-      if (choosemonths.max > json.action_dates.length) { 
+      var monthstoshow = choosemonths.value;
+      if (choosemonths.max > json.action_dates.length) {
         choosemonths.max = json.action_dates.length;
       }
       var sliceOff = 0;
-      if (monthstoshow < json.action_dates.length) { 
+      if (monthstoshow < json.action_dates.length) {
         sliceOff = json.action_dates.length - monthstoshow
       }
-      var barChartData = globalBarChartData[columnToShow];
-      barChartData.labels = json.action_dates.slice (sliceOff); 
-      barChartData.datasets.length=0;
+      var barChartData = globalAppConfig[columnToShow];
+      barChartData.labels = json.action_dates.slice(sliceOff);
+      barChartData.datasets.length = 0;
       namesToShow.forEach(function (name) {
         var data = Object.values(map[name])
-        var trimmed_data = data.slice (sliceOff)
-        var colour = colours[name] 
+        var trimmed_data = data.slice(sliceOff)
+        var colour = colours[name]
         barChartData.datasets.push({
           label: name,
           backgroundColor: Chart.helpers.color(colour).alpha(0.7).rgbString(),
@@ -270,10 +316,10 @@
           data: trimmed_data
         })
       })
-      globalBarChartData.bars.forEach(function (bar) {
+      globalAppConfig.bars.forEach(function (bar) {
         bar.update();
       })
-       
+
     }
 
     window.onload = function () {

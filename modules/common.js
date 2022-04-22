@@ -35,6 +35,7 @@ function convertKnownField(fieldname, value) {
   return parseInt(value);
 }
 
+// if an action has been renamed, merge the two names into the new name
 const action_name_map = {
   "openshift-actions": "oc-installer",
   "buildah-action": "buildah-build",
@@ -86,14 +87,14 @@ function ActionsData() {
     'rgb(201, 203, 0)',
     'rgb(255, 0, 132)',
     'rgb(255, 0, 64)',
-    'rgb(255, 0, 86)', 
+    'rgb(255, 0, 86)',
     'rgb(0, 192, 255)',
 
     'rgb(0, 22, 192)',
     'rgb(0, 99, 255)',
     'rgb(0, 200, 150)',
     'rgb(0, 200, 99)',
-    'rgb(0, 200, 0)' 
+    'rgb(0, 200, 0)'
 
   ];
   this.tsuffix = noMerge ? '(unmerged action names)' : "";
@@ -128,21 +129,21 @@ function merge_aliased_stats(json) {
       name_date_map[e.mergedName][e.Date] = e
     }
   })
-  json.data = json.data.filter(function (e) { return !e.discard }) 
-  
+  json.data = json.data.filter(function (e) { return !e.discard })
+
 }
 
-function computeSortMap(json) { 
+function computeSortMap(json) {
   var findAllMax = {};
   json.data.forEach(function (e) {
     var current = findAllMax[e.Name];
-    if (current == undefined) findAllMax[e.Name]=e.Total; 
-    if (findAllMax[e.Name]<e.Total) findAllMax[e.Name]=e.Total  
-  }) 
-  var s=[];
+    if (current == undefined) findAllMax[e.Name] = e.Total;
+    if (findAllMax[e.Name] < e.Total) findAllMax[e.Name] = e.Total
+  })
+  var s = [];
   json.action_names.forEach(function (name) {
-    s.push ({ "Name": name, "Total": findAllMax[name]})
-  })    
+    s.push({ "Name": name, "Total": findAllMax[name] })
+  })
 
   s.sort(function (a, b) { if (a.Total > b.Total) return -1; else return 1; });
   var idx = 0;
@@ -150,7 +151,7 @@ function computeSortMap(json) {
   s.forEach(function (e) {
     e.sortIndex = idx++;
     sortMap[e.Name] = e.sortIndex
-  }); 
+  });
   json.data.forEach(function (e) {
     e.sortIndex = sortMap[e.Name]
   })
@@ -182,7 +183,7 @@ function parse_csv(text) {
   actionData.action_dates = [...new Set(action_dates)];
 
   computeSortMap(actionData)
-  
+
   var map = new Object();
   actionData.action_names.forEach(function (name) {
     map[name] = new Object();
