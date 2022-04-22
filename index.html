@@ -41,11 +41,13 @@
 
 <body>
   <h1> Github Actions Stats </h1>
-  <div id="trim_text"> Show top actions </div>
-  <input type="range" min="1" max="20" value="20" step="1" class="slider" id="trimmer">
 
-  <div id="choosemonths_text"> Number of months to show </div>
-  <input type="range" min="1" max="20" value="12" step="1" class="slider" id="choosemonths">
+  <div id="show_top_n_text"> Show top actions </div>
+  <input type="range" min="1" max="20" value="20" step="1" class="slider" id="show_top_n_trimmer">
+
+  <div id="show_n_months_text"> Number of months to show </div>
+  <input type="range" min="1" max="20" value="12" step="1" class="slider" id="show_n_month_trimmer">
+  
   <div id='outer_grid_holder' class="grid-container"> </div>
 
   <div id="legend"> </div>
@@ -60,17 +62,13 @@
     <li>UniqueRepos - number of unique repos with workflows using action</li>
     <li>WorkflowRuns - number of overall workflow runs using action</li>
     <li>UniqueJobs - number of unique workflow jobs using action, eg. multiple jobs per workflow or matrix build</li>
-
     <li><em>UniqueRepos/UniqueOwners</em> - computed metric which represents the average number of repos a single action
       is used per user.</li>
     <li><em>WorkflowRuns/UniqueRepos</em> - computed metric which represents the average number of runs per repo. </li>
   </ul>
 
-
-  
   <div id="debug_raw_json" style="height:300;width:800px;border:2px solid #ccc;"></div>
   <div id="debug_processed_text" style="height:300;width:800px;border:2px solid #ccc;"></div>
-
 
   <script type="module">
     import {
@@ -95,20 +93,19 @@
     if (params.has("months")) { 
       var val = params.get ("months")
       globalAppConfig.months_to_show = val 
-      document.getElementById("choosemonths").value = val;
+      document.getElementById("show_n_month_trimmer").value = val;
     }
     if (params.has("top")) {  
       var val = params.get ("top")
       globalAppConfig.top_n_actions_to_show = val
-      document.getElementById("trimmer").value = val;
+      document.getElementById("show_top_n_trimmer").value = val;
 
     } 
     if (params.has("show")) { 
       var val = params.get ("show")
-      globalAppConfig.actions_to_show = val
-      
-      alert ("show " + val)
+      globalAppConfig.actions_to_show = val   
     }
+
     globalAppConfig.initialUrl = window.location;
     globalAppConfig.initialQuery = "";
 
@@ -179,39 +176,54 @@
       jsondata.selectedActions = {}
       var selected = ' <fieldset> <legend>Select Actions to Display</legend>'
       jsondata.action_names.forEach(function (label) {
-        jsondata.selectedActions[label] = true
+        var isEnabled = globalAppConfig.actions_to_show == null || globalAppConfig.actions_to_show.includes(label)
+        jsondata.selectedActions[label] = isEnabled
         selected +=
-          '<input type="checkbox" name="action" checked="true" id="select_label_' + label + '" value="' + label + '"/><label for="track">' + label + '</label><br />'
+          '<input type="checkbox" name="action" checked="' 
+          + isEnabled 
+          + '" id="select_label_' 
+          + label 
+          + '" value="' 
+          + label 
+          + '"/><label for="track">' 
+          + label + '</label><br />'
       })
-      selected += '</fieldset>'
+      selected += '</fieldset>' 
       setInnerHtml("select_actions", selected);
-      var trimmer = document.getElementById("trimmer");
+      var trimmer = document.getElementById("show_top_n_trimmer");
       jsondata.action_names.forEach(function (label) {
-        var input = document.getElementById('select_label_' + label);
+        var input = document.getElementById('select_label_' + label); 
+        input.checked = jsondata.selectedActions[label]
         input.oninput = function () {
-          jsondata.selectedActions[label] = !jsondata.selectedActions[label]
-         // trimmer.value = trimmer.max
+          jsondata.selectedActions[label] = !jsondata.selectedActions[label] 
           jsondata.labels.forEach(function (l) {
             show_graphs(jsondata, l);
           })
+          // 
         }
-      }) 
+      })  
+      
+      var totalEnabled = (Object.values(jsondata.selectedActions).filter(function (enabled) { return enabled; })).length;
       var canvas_grid = ''
       jsondata.labels.forEach(function (label) {
         canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_' + label + '" ></canvas></div>';
-        canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_stack_' + label + '" ></canvas></div>';
+        if (totalEnabled > 1) { 
+          canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_stack_' + label + '" ></canvas></div>';
+        }
       })
       setInnerHtml("outer_grid_holder", canvas_grid);
       globalAppConfig.bars = [];
       jsondata.labels.forEach(function (label) {
         globalAppConfig[label] = { labels: [label], datasets: [] };
         globalAppConfig.bars.push(createCanvasFor(globalAppConfig[label], label, false))
-        globalAppConfig.bars.push(createCanvasFor(globalAppConfig[label], label, true))
+        if (totalEnabled > 1) { 
+          globalAppConfig.bars.push(createCanvasFor(globalAppConfig[label], label, true))
+        }
       })
       jsondata.labels.forEach(function (label) {
         show_graphs(jsondata, label);
       })
-      var trimmer = document.getElementById("trimmer");
+      var trimmer = document.getElementById("show_top_n_trimmer");
       trimmer.oninput = function () {
         showTrimText(jsondata)
         jsondata.labels.forEach(function (l) {
@@ -219,7 +231,7 @@
         })
       }
       trimmer.onchange = trimmer.oninput; 
-      var choosemonths = document.getElementById("choosemonths");
+      var choosemonths = document.getElementById("show_n_month_trimmer");
       choosemonths.oninput = function () {
         showMonthText(jsondata)
         jsondata.labels.forEach(function (l) {
@@ -228,7 +240,7 @@
       }
       choosemonths.onchange = choosemonths.oninput;  
     }
-    var trimmer = document.getElementById("trimmer");
+    var trimmer = document.getElementById("show_top_n_trimmer");
 
     function showTrimText(json) {
       var total = Object.keys(json.selectedActions).length;
@@ -236,7 +248,7 @@
 
       if (trimmer.max != totalEnabled) {
         trimmer.max = totalEnabled;
-        globalAppConfig.default_top_n_actions_to_show = trimmer.max
+        globalAppConfig.default_top_n_actions_to_show = total
       }
 
       var selectedText;
@@ -245,14 +257,28 @@
       } else {
         selectedText = totalEnabled + ' (<a href="#legend">subset selected from ' + total + ' actions </a>)';
       }
-      setInnerHtml("trim_text", "Showing top " + trimmer.value + ' of ' + selectedText);
+      setInnerHtml("show_top_n_text", "Showing top " + trimmer.value + ' of ' + selectedText);
       globalAppConfig.top_n_actions_to_show = trimmer.value
+      if (total == totalEnabled) { 
+        globalAppConfig.actions_to_show = null
+      } else { 
+        var enabled = Object.keys(json.selectedActions).filter(function (enabled) { 
+            return json.selectedActions[enabled]; })
+        var prefix=""; 
+        var query=""
+        enabled.forEach(function (name) {
+            query += prefix+name
+            prefix=','
+        })
+        globalAppConfig.actions_to_show = query
+      }
+
       updateWindowsLocation();
     }
 
-    var choosemonths = document.getElementById("choosemonths");
+    var choosemonths = document.getElementById("show_n_month_trimmer");
     function showMonthText(json) {
-      setInnerHtml("choosemonths_text", "Showing last " + choosemonths.value + ' of '
+      setInnerHtml("show_n_months_text", "Showing last " + choosemonths.value + ' of '
         + choosemonths.max + ' months of data');
       globalAppConfig.months_to_show = choosemonths.value
       updateWindowsLocation();
@@ -288,7 +314,7 @@
       dataToShow.forEach(function (element) {
         map[element.Name][element.Date] = element[columnToShow]
       }) 
-      var choosemonths = document.getElementById("choosemonths");
+      var choosemonths = document.getElementById("show_n_month_trimmer");
       var monthstoshow = choosemonths.value;
       if (choosemonths.max > json.action_dates.length) {
         choosemonths.max = json.action_dates.length;
