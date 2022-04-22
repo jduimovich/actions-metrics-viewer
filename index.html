@@ -67,10 +67,9 @@
   </ul>
 
 
-  <h4>Raw Data</h4>
-  <div id="json" style="height:300;width:800px;border:2px solid #ccc;"></div>
-  <h4>JSON Processed</h4>
-  <div id="text" style="height:300;width:800px;border:2px solid #ccc;"></div>
+  
+  <div id="debug_raw_json" style="height:300;width:800px;border:2px solid #ccc;"></div>
+  <div id="debug_processed_text" style="height:300;width:800px;border:2px solid #ccc;"></div>
 
 
   <script type="module">
@@ -80,6 +79,7 @@
     } from './modules/common.js';
      
     var globalAppConfig =  {
+      "debug": false,
       "default_months_to_show": 12,
       "months_to_show": 12,
       "default_top_n_actions_to_show": null, 
@@ -88,7 +88,10 @@
       "actions_to_show": null
     } 
     const params = new URLSearchParams(window.location.search)
-     
+    
+    if (params.has("debug")) {  
+      globalAppConfig.debug = params.get ("debug") 
+    }
     if (params.has("months")) { 
       var val = params.get ("months")
       globalAppConfig.months_to_show = val 
@@ -128,14 +131,10 @@
       { 
         query += prefix + "show=" + globalAppConfig.actions_to_show
         prefix = "&"
-      } 
-        let stateObj = {
-          foo: "bar",
-        } 
-        history.replaceState(stateObj, "Ignored", "index.html"+ query)
- 
+      }  
+      history.replaceState({  foo: "bar" }, "Ignored", "index.html"+ query)
     } 
-    updateWindowsLocation ()
+    //updateWindowsLocation ()
 
     function createCanvasFor(data, tag, stacked) {
       var id = (stacked ? 'canvas_stack_' : 'canvas_') + tag;
@@ -167,9 +166,13 @@
     }
 
     function update_graph(text) {
-      setInnerHtml("json", '<pre>' + text + '</pre>');
       var jsondata = parse_csv(text);
-      setInnerHtml("text", '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
+
+      if (globalAppConfig.debug) { 
+        setInnerHtml("debug_raw_json",  '<h4>Raw Data</h4>' + '<pre>' + text + '</pre>');
+        setInnerHtml("debug_processed_text", '<h4>JSON Processed</h4>' + '<pre>' + JSON.stringify(jsondata, null, 4) + '</pre>');
+      }
+      
       document.title = "Metrics "
         + (jsondata.data[0].Date) + " - " + (jsondata.data[jsondata.data.length - 1].Date)
 
@@ -192,9 +195,7 @@
             show_graphs(jsondata, l);
           })
         }
-      })
-
-
+      }) 
       var canvas_grid = ''
       jsondata.labels.forEach(function (label) {
         canvas_grid += '<div class="grid-item  wide"><canvas class="grid-item " id="canvas_' + label + '" ></canvas></div>';
@@ -217,8 +218,7 @@
           show_graphs(jsondata, l);
         })
       }
-      trimmer.onchange = trimmer.oninput;
-
+      trimmer.onchange = trimmer.oninput; 
       var choosemonths = document.getElementById("choosemonths");
       choosemonths.oninput = function () {
         showMonthText(jsondata)
@@ -226,9 +226,7 @@
           show_graphs(jsondata, l);
         })
       }
-      choosemonths.onchange = choosemonths.oninput;
-
-
+      choosemonths.onchange = choosemonths.oninput;  
     }
     var trimmer = document.getElementById("trimmer");
 
@@ -289,9 +287,7 @@
       })
       dataToShow.forEach(function (element) {
         map[element.Name][element.Date] = element[columnToShow]
-      })
-
-
+      }) 
       var choosemonths = document.getElementById("choosemonths");
       var monthstoshow = choosemonths.value;
       if (choosemonths.max > json.action_dates.length) {
@@ -318,8 +314,7 @@
       })
       globalAppConfig.bars.forEach(function (bar) {
         bar.update();
-      })
-
+      }) 
     }
 
     window.onload = function () {
